@@ -53,14 +53,14 @@ gcroot<array<unsigned short>^> gCapturedData; //Image data
 //-----------------------------------------------------------------------------
 // enum
 //-----------------------------------------------------------------------------
-enum class E_CAPTUREMODE{                               //Capture mode
+enum class E_CAPTUREMODE {                               //Capture mode
     D_CAPTUREMODE_COUNT = 0x00000000,                   //Frequency specified meausrement mode
     D_CAPTUREMODE_CONTINUOUS = 0x00000001,              //Continous measurement mode
     D_CAPTUREMODE_TRIGGER = 0x00000002,                 //Trigger mode
-    
+
 };
 
-enum class E_TRIGGERMODE{
+enum class E_TRIGGERMODE {
     D_TRIGGERMODE_INTERNAL = 0x00000000,                //Internal synchronous mode
     D_TRIGGERMODE_SOFTASYNC = 0x00000001,               //Software asynchronous mode
     D_TRIGGERMODE_SOFTSYNC = 0x00000002,                //Software synchronous mode
@@ -71,17 +71,17 @@ enum class E_TRIGGERMODE{
     D_TRIGGERMODE_EXTSYNCPULSE = 0x00000007,            //External synchronous pulse mode
 };
 
-enum class E_CALIBRATIONCOEFFICIENT{
+enum class E_CALIBRATIONCOEFFICIENT {
     D_CALIBRATIONCOEFFICIENT_WAVELENGTH = 0x00000000,   //Wavelength calibration coefficient
     D_CALIBRATIONCOEFFICIENT_SENSIBILITY = 0x00000001,  //Sensibility calibration coefficient
 };
 
-enum class E_GAINMODE{
+enum class E_GAINMODE {
     D_GAINMODE_SENSOR = 0x00000000,                     //SensorGainMode
     D_GAINMODE_CIRCUIT = 0x00000001,                    //CircuitGainMode
 };
 
-enum class E_SENSORGAINMODE{
+enum class E_SENSORGAINMODE {
     D_SENSORGAINMODE_LOWGAIN = 0x00000000,              //Low Gain
     D_SENSORGAINMODE_HIGHGAIN = 0x00000001,             //High Gain
     D_SENSORGAINMODE_NOTHING = 0x000000FF,              //Nothing
@@ -115,7 +115,7 @@ void OnProcessExit(Object^ sender, EventArgs^ e);
 //-----------------------------------------------------------------------------
 // main function
 //-----------------------------------------------------------------------------
-int main(array<System::String ^> ^args)
+int main(array<System::String^>^ args)
 {
     Console::WriteLine("[main] in main");
     Console::Out->Flush();
@@ -131,7 +131,7 @@ int main(array<System::String ^> ^args)
 
     //Create object of WRRUSB2 class
     objWrrUSB = gcnew WRRUSB2();
-    if (objWrrUSB == nullptr){
+    if (objWrrUSB == nullptr) {
         return 1;
     }
     Console::WriteLine("[main] created object");
@@ -149,7 +149,7 @@ int main(array<System::String ^> ^args)
     Console::Out->Flush();
     AppDomain::CurrentDomain->ProcessExit += gcnew EventHandler(OnProcessExit);
 
-   
+
 
     // --- Set up the multi-threaded modules ---
 
@@ -160,42 +160,30 @@ int main(array<System::String ^> ^args)
     PrintMenu();
     Console::Out->Flush();
 
-    auto stdinStream = Console::OpenStandardInput();
-    array<Byte>^ buffer = gcnew array<Byte>(1024);
-    Console::WriteLine("didthereaderbreak");
-    Console::Out->Flush();
-
-
     while (nLoopFlag == 1)
     {
+        Console::WriteLine("intheloop");
+        Console::Out->Flush();
         Console::Write(">");
         Console::Out->Flush();
 
-        int bytesRead = 0;
+        Console::WriteLine("before");
+        Console::Out->Flush();
 
-        try {
-            Console::Write("inthetry");
-            Console::Out->Flush();
-            bytesRead = stdinStream->Read(buffer, 0, buffer->Length);
-            Console::Write("afterRead");
-            Console::Out->Flush();
-            if (bytesRead <= 0) {
-                Console::WriteLine("[read error] No data received.");
-                break;
-            }
-        }
-        catch (Exception^ ex) {
-            Console::WriteLine("[read error] " + ex->Message);
+        String^ strInput = Console::In->ReadLine(); // <- works from Qt or terminal
+        Console::WriteLine("afterreadline");
+        Console::Out->Flush();
+
+
+        if (strInput == nullptr) {
+            Console::WriteLine("[input stream closed]");
             break;
         }
 
-        String^ strInput = System::Text::Encoding::UTF8->GetString(buffer, 0, bytesRead)->Trim();
-        Console::WriteLine("read: " + strInput);
-        Console::Out->Flush();
-
+        strInput = strInput->Trim();
         if (String::IsNullOrWhiteSpace(strInput)) continue;
 
-        char cInput = (char)Char::ToUpper(strInput[0]);
+        char cInput = Char::ToUpper(strInput[0]);
 
 
         switch (cInput)
@@ -255,7 +243,7 @@ int main(array<System::String ^> ^args)
             break;
 
         case 'R': // Start Capture
-            if (!capturing.load()) { 
+            if (!capturing.load()) {
                 capture->StartCapture();
             }
             else {
@@ -266,7 +254,7 @@ int main(array<System::String ^> ^args)
             break;
 
         case 'T': // Stop Capture
-            if (capturing.load()) { 
+            if (capturing.load()) {
                 capture->StopCapture();
             }
             else {
@@ -323,44 +311,36 @@ long InitializeDevice(WRRUSB2^ objWrrUSB)
 {
     long    lReturn = 0;
     unsigned short usNum = 0;
-    array<short>^  aryDeviceId = nullptr;
+    array<short>^ aryDeviceId = nullptr;
 
     //Argument error check
-    if (objWrrUSB == nullptr){
+    if (objWrrUSB == nullptr) {
         return safe_cast<System::Int32>(Usb2Struct::Cusb2Err::usb2Err_unsuccess);
     }
 
     //Initialization
     lReturn = (long)objWrrUSB->USB2_initialize();
-    if (lReturn != safe_cast<System::Int32>(Usb2Struct::Cusb2Err::usb2Success)){
+    if (lReturn != safe_cast<System::Int32>(Usb2Struct::Cusb2Err::usb2Success)) {
         Console::WriteLine("Error code 0x{0:x04}: Dll Can not be Initialized.", lReturn);
         Console::WriteLine("Exit by pressing the key");
         Console::Out->Flush();
-
-        if (Environment::UserInteractive) {
-            Console::ReadKey(); // only when not launched from GUI
-        }
         return lReturn;
     }
 
     //Device ID storage area allocation
     aryDeviceId = gcnew array<short>(8);
-    if (aryDeviceId == nullptr){
+    if (aryDeviceId == nullptr) {
         return safe_cast<System::Int32>(Usb2Struct::Cusb2Err::usb2Err_unsuccess);
     }
     Array::Clear(aryDeviceId, 0, aryDeviceId->Length);
 
     //Get connected device list
     lReturn = (long)objWrrUSB->USB2_getModuleConnectionList(aryDeviceId, usNum);
-    if (lReturn != safe_cast<System::Int32>(Usb2Struct::Cusb2Err::usb2Success)){
+    if (lReturn != safe_cast<System::Int32>(Usb2Struct::Cusb2Err::usb2Success)) {
         objWrrUSB->USB2_uninitialize();
         Console::WriteLine("Error code 0x{0:x04}: Module Connection list failed.", lReturn);
         Console::WriteLine("Exit by pressing the key");
         Console::Out->Flush();
-
-        if (Environment::UserInteractive) {
-            Console::ReadKey(); // only when not launched from GUI
-        }
         return lReturn;
     }
 
@@ -369,15 +349,11 @@ long InitializeDevice(WRRUSB2^ objWrrUSB)
 
     //Open device
     lReturn = (long)objWrrUSB->USB2_open(g_nDeviceId);
-    if (lReturn != safe_cast<System::Int32>(Usb2Struct::Cusb2Err::usb2Success)){
+    if (lReturn != safe_cast<System::Int32>(Usb2Struct::Cusb2Err::usb2Success)) {
         objWrrUSB->USB2_uninitialize();
         Console::WriteLine("Error code 0x{0:x04}: Device can not be open.", lReturn);
         Console::WriteLine("Exit by pressing the key");
         Console::Out->Flush();
-
-        if (Environment::UserInteractive) {
-            Console::ReadKey(); // only when not launched from GUI
-        }
         return lReturn;
     }
 
@@ -392,13 +368,13 @@ long UninitializeDevice(WRRUSB2^ objWrrUSB)
     long    lReturn = 0;
 
     //Argument error check
-    if (objWrrUSB == nullptr){
+    if (objWrrUSB == nullptr) {
         return safe_cast<System::Int32>(Usb2Struct::Cusb2Err::usb2Err_unsuccess);
     }
 
     //Close device
     lReturn = (long)objWrrUSB->USB2_close(g_nDeviceId);
-    if (lReturn != safe_cast<System::Int32>(Usb2Struct::Cusb2Err::usb2Success)){
+    if (lReturn != safe_cast<System::Int32>(Usb2Struct::Cusb2Err::usb2Success)) {
         Console::WriteLine("Error code 0x{0:x04}: Device can not be closed.", lReturn);
         Console::WriteLine("Exit by pressing the key");
         Console::Out->Flush();
@@ -411,7 +387,7 @@ long UninitializeDevice(WRRUSB2^ objWrrUSB)
 
     //Uninitialization
     lReturn = (long)objWrrUSB->USB2_uninitialize();
-    if (lReturn != safe_cast<System::Int32>(Usb2Struct::Cusb2Err::usb2Success)){
+    if (lReturn != safe_cast<System::Int32>(Usb2Struct::Cusb2Err::usb2Success)) {
         Console::WriteLine("Error code 0x{0:x04}: USB2_uninitialize failed.", lReturn);
         Console::WriteLine("Exit by pressing the key");
         Console::Out->Flush();
@@ -434,21 +410,21 @@ long GetDeivceInformation(WRRUSB2^ objWrrUSB)
     Usb2Struct::CSpectroInformation^ pSpecInfo = nullptr;
 
     //Argument error check
-    if (objWrrUSB == nullptr){
+    if (objWrrUSB == nullptr) {
         return safe_cast<System::Int32>(Usb2Struct::Cusb2Err::usb2Err_unsuccess);
     }
 
-    try{
+    try {
         pModuleInfo = gcnew Usb2Struct::CModuleInformation();
         pSpecInfo = gcnew Usb2Struct::CSpectroInformation();
     }
-    catch (OutOfMemoryException^){
-       // Debug::Assert(false);
+    catch (OutOfMemoryException^) {
+        // Debug::Assert(false);
         return safe_cast<System::Int32>(Usb2Struct::Cusb2Err::usb2Err_unsuccess);
     }
 
     lReturn = (long)objWrrUSB->USB2_getModuleInformation(g_nDeviceId, pModuleInfo);
-    if (lReturn != safe_cast<System::Int32>(Usb2Struct::Cusb2Err::usb2Success)){
+    if (lReturn != safe_cast<System::Int32>(Usb2Struct::Cusb2Err::usb2Success)) {
         Console::WriteLine("Error code 0x{0:x04}: USB2_getModuleInformation failed.", lReturn);
         Console::WriteLine("Exit by pressing the key");
         Console::Out->Flush();
@@ -459,7 +435,7 @@ long GetDeivceInformation(WRRUSB2^ objWrrUSB)
     }
 
     lReturn = (long)objWrrUSB->USB2_getSpectroInformation(g_nDeviceId, pSpecInfo);
-    if (lReturn != safe_cast<System::Int32>(Usb2Struct::Cusb2Err::usb2Success)){
+    if (lReturn != safe_cast<System::Int32>(Usb2Struct::Cusb2Err::usb2Success)) {
         Console::WriteLine("Error code 0x{0:x04}: USB2_getSpectroInformation failed.", lReturn);
         Console::WriteLine("Exit by pressing the key");
         Console::Out->Flush();
@@ -489,20 +465,20 @@ long GetCalibrationValue(WRRUSB2^ objWrrUSB)
     array<double>^ arydblDataArray = nullptr;
 
     //Argument error check
-    if (objWrrUSB == nullptr){
+    if (objWrrUSB == nullptr) {
         return safe_cast<System::Int32>(Usb2Struct::Cusb2Err::usb2Err_unsuccess);
     }
 
-    try{
+    try {
         arydblDataArray = gcnew array<double>(6);
     }
-    catch (OutOfMemoryException^){
+    catch (OutOfMemoryException^) {
         //Debug::Assert(false);
         return safe_cast<System::Int32>(Usb2Struct::Cusb2Err::usb2Err_unsuccess);
     }
 
     lReturn = (long)objWrrUSB->USB2_getCalibrationCoefficient(g_nDeviceId, (long)E_CALIBRATIONCOEFFICIENT::D_CALIBRATIONCOEFFICIENT_WAVELENGTH, arydblDataArray);
-    if (lReturn != safe_cast<System::Int32>(Usb2Struct::Cusb2Err::usb2Success)){
+    if (lReturn != safe_cast<System::Int32>(Usb2Struct::Cusb2Err::usb2Success)) {
         Console::WriteLine("Error code 0x{0:x04}: USB2_getCalibrationCoefficient failed.", lReturn);
         Console::WriteLine("Exit by pressing the key");
         Console::Out->Flush();
@@ -536,12 +512,12 @@ long GetLDPower(WRRUSB2^ objWrrUSB)
     Int64 lLDPower = 0;
 
     //Argument error check
-    if (objWrrUSB == nullptr){
+    if (objWrrUSB == nullptr) {
         return (long)(Usb2Struct::Cusb2Err::usb2Err_unsuccess);
     }
 
     lReturn = (long)objWrrUSB->USB2_getLDPower(g_nDeviceId, lLDPower);
-    if (lReturn != (long)Usb2Struct::Cusb2Err::usb2Success){
+    if (lReturn != (long)Usb2Struct::Cusb2Err::usb2Success) {
         Console::WriteLine("Error code 0x{0:x04}: USB2_getLDPower failed.", lReturn);
         Console::WriteLine("Exit by pressing the key");
         Console::Out->Flush();
@@ -570,7 +546,7 @@ long SetLDPower(WRRUSB2^ objWrrUSB)
     String^ strNum = "";
 
     //Argument error check
-    if (objWrrUSB == nullptr){
+    if (objWrrUSB == nullptr) {
         return safe_cast<System::Int32>(Usb2Struct::Cusb2Err::usb2Err_unsuccess);
     }
 
@@ -585,7 +561,7 @@ long SetLDPower(WRRUSB2^ objWrrUSB)
     Int64::TryParse(strNum, lLDPower);
 
     lReturn = (long)objWrrUSB->USB2_setLDPower(g_nDeviceId, lLDPower);
-    if (lReturn != safe_cast<System::Int32>(Usb2Struct::Cusb2Err::usb2Success)){
+    if (lReturn != safe_cast<System::Int32>(Usb2Struct::Cusb2Err::usb2Success)) {
         Console::WriteLine("Error code 0x{0:x04}: USB2_setLDPower failed.", lReturn);
         Console::WriteLine("Exit by pressing the key");
         Console::Out->Flush();
@@ -667,7 +643,7 @@ long SetLDPowerEnable(WRRUSB2^ objWrrUSB)
     }
     catch (Exception^)
     {
-      //  Debug::Assert(false);
+        //  Debug::Assert(false);
         return (long)Usb2Struct::Cusb2Err::usb2Err_unsuccess;
     }
 
@@ -776,8 +752,8 @@ void PrintMenu(void)
     Console::WriteLine("  LDTemperature      (7) Get");
     Console::WriteLine("  LDBoardTemp        (8) Get");
     Console::WriteLine("  Measure            (F) FrequencyMode  (G) ContinuousMode (H) TriggerMode  (S) SingleSpectrum");
-	Console::WriteLine("  Capture            (R) StartCapture    (T) StopCapture");
-	Console::WriteLine("  SaveData           (C) Save");
+    Console::WriteLine("  Capture            (R) StartCapture    (T) StopCapture");
+    Console::WriteLine("  SaveData           (C) Save");
     Console::WriteLine("  Quit               (Q) Quit");
     Console::WriteLine("--------------------------------------------------------------------------");
     Console::Out->Flush();
@@ -805,11 +781,11 @@ long StartMeasureForFrequencyMode(WRRUSB2^ objWrrUSB)
     long    lSensorGainMode = (long)E_SENSORGAINMODE::D_SENSORGAINMODE_LOWGAIN;
     array<unsigned short>^ aryusImageData = nullptr;
     array<unsigned short>^ aryusImageHeader = nullptr;
-    array<UInt64>^  aryTime = nullptr;
+    array<UInt64>^ aryTime = nullptr;
     gCapturedData = nullptr;  // Clear any previous data.
 
     //Argument error check
-    if (objWrrUSB == nullptr){
+    if (objWrrUSB == nullptr) {
         return safe_cast<System::Int32>(Usb2Struct::Cusb2Err::usb2Err_unsuccess);
     }
 
@@ -819,7 +795,7 @@ long StartMeasureForFrequencyMode(WRRUSB2^ objWrrUSB)
 
     //Set CaptureMode 
     lReturn = (long)objWrrUSB->USB2_setCaptureMode(g_nDeviceId, (long)E_CAPTUREMODE::D_CAPTUREMODE_COUNT);
-    if (lReturn != safe_cast<System::Int32>(Usb2Struct::Cusb2Err::usb2Success)){
+    if (lReturn != safe_cast<System::Int32>(Usb2Struct::Cusb2Err::usb2Success)) {
         Console::WriteLine("Error code 0x{0:x04}: USB2_setCaptureMode failed.", lReturn);
         Console::WriteLine("Exit by pressing the key");
         Console::Out->Flush();
@@ -832,7 +808,7 @@ long StartMeasureForFrequencyMode(WRRUSB2^ objWrrUSB)
 
     // Set TriggerMode
     lReturn = (long)objWrrUSB->USB2_setTriggerMode(g_nDeviceId, (long)E_TRIGGERMODE::D_TRIGGERMODE_INTERNAL);
-    if (lReturn != safe_cast<System::Int32>(Usb2Struct::Cusb2Err::usb2Success)){
+    if (lReturn != safe_cast<System::Int32>(Usb2Struct::Cusb2Err::usb2Success)) {
         Console::WriteLine("Error code 0x{0:x04}: USB2_setTriggerMode failed.", lReturn);
         Console::WriteLine("Exit by pressing the key");
         Console::Out->Flush();
@@ -845,7 +821,7 @@ long StartMeasureForFrequencyMode(WRRUSB2^ objWrrUSB)
 
     //Set acquired data count
     lReturn = (long)objWrrUSB->USB2_setDataCount(g_nDeviceId, lDataCount);
-    if (lReturn != safe_cast<System::Int32>(Usb2Struct::Cusb2Err::usb2Success)){
+    if (lReturn != safe_cast<System::Int32>(Usb2Struct::Cusb2Err::usb2Success)) {
         Console::WriteLine("Error code 0x{0:x04}: USB2_setDataCount failed.", lReturn);
         Console::WriteLine("Exit by pressing the key");
         Console::Out->Flush();
@@ -858,7 +834,7 @@ long StartMeasureForFrequencyMode(WRRUSB2^ objWrrUSB)
 
     //Set data transmit count
     lReturn = (long)objWrrUSB->USB2_setDataTransmit(g_nDeviceId, lDataTrasmit);
-    if (lReturn != safe_cast<System::Int32>(Usb2Struct::Cusb2Err::usb2Success)){
+    if (lReturn != safe_cast<System::Int32>(Usb2Struct::Cusb2Err::usb2Success)) {
         Console::WriteLine("Error code 0x{0:x04}: USB2_setDataTransmit failed.", lReturn);
         Console::WriteLine("Exit by pressing the key");
         Console::Out->Flush();
@@ -871,7 +847,7 @@ long StartMeasureForFrequencyMode(WRRUSB2^ objWrrUSB)
 
     //Set exposure cycle
     lReturn = (long)objWrrUSB->USB2_setExposureCycle(g_nDeviceId, CYCLE_TIME);
-    if (lReturn != safe_cast<System::Int32>(Usb2Struct::Cusb2Err::usb2Success)){
+    if (lReturn != safe_cast<System::Int32>(Usb2Struct::Cusb2Err::usb2Success)) {
         Console::WriteLine("Error code 0x{0:x04}: USB2_setExposureCycle failed.", lReturn);
         Console::WriteLine("Exit by pressing the key");
         Console::Out->Flush();
@@ -884,7 +860,7 @@ long StartMeasureForFrequencyMode(WRRUSB2^ objWrrUSB)
 
     //Set exposure time
     lReturn = (long)objWrrUSB->USB2_setExposureTime(g_nDeviceId, EXPOSURE_TIME);
-    if (lReturn != safe_cast<System::Int32>(Usb2Struct::Cusb2Err::usb2Success)){
+    if (lReturn != safe_cast<System::Int32>(Usb2Struct::Cusb2Err::usb2Success)) {
         Console::WriteLine("Error code 0x{0:x04}: USB2_setExposureTime failed.", lReturn);
         Console::WriteLine("Exit by pressing the key");
         Console::Out->Flush();
@@ -897,7 +873,7 @@ long StartMeasureForFrequencyMode(WRRUSB2^ objWrrUSB)
 
     //Set gain value(Set the sensor gain mode, and set low gain or high gain)
     lReturn = (long)objWrrUSB->USB2_setGain(g_nDeviceId, lGainMode, lSensorGainMode);
-    if (lReturn != safe_cast<System::Int32>(Usb2Struct::Cusb2Err::usb2Success)){
+    if (lReturn != safe_cast<System::Int32>(Usb2Struct::Cusb2Err::usb2Success)) {
         Console::WriteLine("Error code 0x{0:x04}: USB2_setGain failed.", lReturn);
         Console::WriteLine("Exit by pressing the key");
         Console::Out->Flush();
@@ -910,7 +886,7 @@ long StartMeasureForFrequencyMode(WRRUSB2^ objWrrUSB)
 
     //Get image size
     lReturn = (long)objWrrUSB->USB2_getImageSize(g_nDeviceId, lSizeX, lSizeY);
-    if (lReturn != safe_cast<System::Int32>(Usb2Struct::Cusb2Err::usb2Success)){
+    if (lReturn != safe_cast<System::Int32>(Usb2Struct::Cusb2Err::usb2Success)) {
         Console::WriteLine("Error code 0x{0:x04}: USB2_getImageSize failed.", lReturn);
         Console::WriteLine("Exit by pressing the key");
         Console::Out->Flush();
@@ -928,7 +904,7 @@ long StartMeasureForFrequencyMode(WRRUSB2^ objWrrUSB)
 
     //Buffer allocation
     lReturn = (long)objWrrUSB->USB2_allocateBuffer(g_nDeviceId, lFrameCnt);
-    if (lReturn != safe_cast<System::Int32>(Usb2Struct::Cusb2Err::usb2Success)){
+    if (lReturn != safe_cast<System::Int32>(Usb2Struct::Cusb2Err::usb2Success)) {
         Console::WriteLine("Error code 0x{0:x04}: USB2_allocateBuffer failed.", lReturn);
         Console::WriteLine("Exit by pressing the key");
         Console::Out->Flush();
@@ -942,7 +918,7 @@ long StartMeasureForFrequencyMode(WRRUSB2^ objWrrUSB)
     //Capture start
     Console::WriteLine("Start Capture.............");
     lReturn = (long)objWrrUSB->USB2_captureStart(g_nDeviceId, lFrameCnt);
-    if (lReturn != safe_cast<System::Int32>(Usb2Struct::Cusb2Err::usb2Success)){
+    if (lReturn != safe_cast<System::Int32>(Usb2Struct::Cusb2Err::usb2Success)) {
         Console::WriteLine("Error code 0x{0:x04}: Data capture can not be start.", lReturn);
         Console::WriteLine("Exit by pressing the key");
         Console::Out->Flush();
@@ -959,23 +935,23 @@ long StartMeasureForFrequencyMode(WRRUSB2^ objWrrUSB)
     Console::Write("Image Data ");
 
     //Data acquisition is reapeated 5 times while determining status of capture
-    do{
+    do {
         //Acquire capture status
         lReturn = (long)objWrrUSB->USB2_getCaptureStatus(g_nDeviceId, lCaptureFrameCnt, lCurrCaptureIdx);
         //Trace::WriteLine("APLLOGC++:CaptureStatus lReturn = " + lReturn.ToString() + " lCaptureFrameCnt = " + lCaptureFrameCnt.ToString() + "lCurrCaptureIdx = " + lCurrCaptureIdx.ToString());
-        if (lReturn == safe_cast<System::Int32>(Usb2Struct::Cusb2Err::usb2Success)){
+        if (lReturn == safe_cast<System::Int32>(Usb2Struct::Cusb2Err::usb2Success)) {
 
             //Calculate old index
-            if (lCaptureFrameCnt > lCurrCaptureIdx + 1){
+            if (lCaptureFrameCnt > lCurrCaptureIdx + 1) {
                 lOldIndex = (long)(OTHERMODE_FRAME_COUNT - (lCaptureFrameCnt - (lCurrCaptureIdx + 1)));
             }
-            else{
+            else {
                 lOldIndex = (long)((lCurrCaptureIdx - lCaptureFrameCnt) + 1);
             }
 
             //Allocate buffer to store header
             aryusImageHeader = gcnew array<unsigned short>((int)(IMAGE_HEADER_SIZE * lCaptureFrameCnt));
-            if (aryusImageHeader == nullptr){
+            if (aryusImageHeader == nullptr) {
                 return safe_cast<System::Int32>(Usb2Struct::Cusb2Err::usb2Err_unsuccess);
             }
             Array::Clear(aryusImageHeader, 0, aryusImageHeader->Length);
@@ -983,21 +959,21 @@ long StartMeasureForFrequencyMode(WRRUSB2^ objWrrUSB)
             //Allocate a buffer to store data
             lImageDataSize = (long)(lCaptureFrameCnt * lDataTrasmit * lPixelSize);
             aryusImageData = gcnew array<unsigned short>((int)lImageDataSize);
-            if (aryusImageData == nullptr){
+            if (aryusImageData == nullptr) {
                 return safe_cast<System::Int32>(Usb2Struct::Cusb2Err::usb2Err_unsuccess);
             }
             Array::Clear(aryusImageData, 0, aryusImageData->Length);
 
             //Allocate buffer to store time
             aryTime = gcnew array<UInt64>((int)(lDataTrasmit * lCaptureFrameCnt));
-            if (aryTime == nullptr){
+            if (aryTime == nullptr) {
                 return safe_cast<System::Int32>(Usb2Struct::Cusb2Err::usb2Err_unsuccess);
             }
 
             //Get data from device
             lReturn = (long)objWrrUSB->USB2_getImageHeaderData(g_nDeviceId, aryusImageHeader, aryusImageData, lOldIndex, lCaptureFrameCnt, aryTime);
             //Trace::WriteLine("APLLOGC++:getImageHeaderData lReturn = " + lReturn.ToString());
-            if (lReturn != safe_cast<System::Int32>(Usb2Struct::Cusb2Err::usb2Success)){
+            if (lReturn != safe_cast<System::Int32>(Usb2Struct::Cusb2Err::usb2Success)) {
                 objWrrUSB->USB2_captureStop(g_nDeviceId);
                 objWrrUSB->USB2_releaseBuffer(g_nDeviceId);
                 Console::WriteLine("Error code 0x{0:x04}: USB2_getImageHeaderData failed.", lReturn);
@@ -1019,7 +995,7 @@ long StartMeasureForFrequencyMode(WRRUSB2^ objWrrUSB)
 
             //Stop capture
             lReturn = (long)objWrrUSB->USB2_captureStop(g_nDeviceId);
-            if (lReturn != safe_cast<System::Int32>(Usb2Struct::Cusb2Err::usb2Success)){
+            if (lReturn != safe_cast<System::Int32>(Usb2Struct::Cusb2Err::usb2Success)) {
                 Console::WriteLine("Error code 0x{0:x04}: USB2_captureStop failed.", lReturn);
                 Console::WriteLine("Exit by pressing the key");
                 Console::Out->Flush();
@@ -1031,28 +1007,28 @@ long StartMeasureForFrequencyMode(WRRUSB2^ objWrrUSB)
             }
 
             //Release allocated buffer
-            if (aryusImageData != nullptr){
+            if (aryusImageData != nullptr) {
                 delete aryusImageData;
                 aryusImageData = nullptr;
             }
-            if (aryusImageHeader != nullptr){
+            if (aryusImageHeader != nullptr) {
                 delete aryusImageHeader;
                 aryusImageHeader = nullptr;
             }
-            if (aryTime != nullptr){
+            if (aryTime != nullptr) {
                 delete aryTime;
                 aryTime = nullptr;
             }
 
             nRepeatCount++;
 
-            if (nRepeatCount < REPEAT_COUNT){
+            if (nRepeatCount < REPEAT_COUNT) {
                 //next Capture start
                 Console::WriteLine("Start Capture.............");
                 Console::Out->Flush();
 
                 lReturn = (long)objWrrUSB->USB2_captureStart(g_nDeviceId, lFrameCnt);
-                if (lReturn != safe_cast<System::Int32>(Usb2Struct::Cusb2Err::usb2Success)){
+                if (lReturn != safe_cast<System::Int32>(Usb2Struct::Cusb2Err::usb2Success)) {
                     Console::WriteLine("Error code 0x{0:x04}: Data capture can not be start.", lReturn);
                     Console::WriteLine("Exit by pressing the key");
                     Console::Out->Flush();
@@ -1070,7 +1046,7 @@ long StartMeasureForFrequencyMode(WRRUSB2^ objWrrUSB)
     //Stop capture
     Console::WriteLine("Stop Capture.........");
     lReturn = (long)objWrrUSB->USB2_captureStop(g_nDeviceId);
-    if (lReturn != safe_cast<System::Int32>(Usb2Struct::Cusb2Err::usb2Success)){
+    if (lReturn != safe_cast<System::Int32>(Usb2Struct::Cusb2Err::usb2Success)) {
         Console::WriteLine("Error code 0x{0:x04}: USB2_captureStop failed.", lReturn);
         Console::WriteLine("Exit by pressing the key");
         Console::Out->Flush();
@@ -1088,7 +1064,7 @@ long StartMeasureForFrequencyMode(WRRUSB2^ objWrrUSB)
     Console::Out->Flush();
 
     lReturn = (long)objWrrUSB->USB2_releaseBuffer(g_nDeviceId);
-    if (lReturn != (Int32)(Usb2Struct::Cusb2Err::usb2Success)){
+    if (lReturn != (Int32)(Usb2Struct::Cusb2Err::usb2Success)) {
         Console::Write("Error code 0x{0:x04}: USB2_releaseBuffer failed.", lReturn);
         return lReturn;
     }
@@ -1124,12 +1100,12 @@ long StartMeasureForContinuousMode(WRRUSB2^ objWrrUSB)
     long lMaxFrameCount = 0;
     array<unsigned short>^ aryusImageData = nullptr;
     array<unsigned short>^ aryusImageHeader = nullptr;
-    array<UInt64>^  aryTime = nullptr;
+    array<UInt64>^ aryTime = nullptr;
     gCapturedData = nullptr;  // Clear any previous data.
 
 
     //Argument error check
-    if (objWrrUSB == nullptr){
+    if (objWrrUSB == nullptr) {
         return safe_cast<System::Int32>(Usb2Struct::Cusb2Err::usb2Err_unsuccess);
     }
 
@@ -1139,7 +1115,7 @@ long StartMeasureForContinuousMode(WRRUSB2^ objWrrUSB)
 
     //Set CaptureMode 
     lReturn = (long)objWrrUSB->USB2_setCaptureMode(g_nDeviceId, (long)E_CAPTUREMODE::D_CAPTUREMODE_CONTINUOUS);
-    if (lReturn != safe_cast<System::Int32>(Usb2Struct::Cusb2Err::usb2Success)){
+    if (lReturn != safe_cast<System::Int32>(Usb2Struct::Cusb2Err::usb2Success)) {
         Console::WriteLine("Error code 0x{0:x04}: USB2_setCaptureMode failed.", lReturn);
         Console::WriteLine("Exit by pressing the key");
         Console::Out->Flush();
@@ -1152,7 +1128,7 @@ long StartMeasureForContinuousMode(WRRUSB2^ objWrrUSB)
 
     // Set TriggerMode
     lReturn = (long)objWrrUSB->USB2_setTriggerMode(g_nDeviceId, (long)E_TRIGGERMODE::D_TRIGGERMODE_INTERNAL);
-    if (lReturn != safe_cast<System::Int32>(Usb2Struct::Cusb2Err::usb2Success)){
+    if (lReturn != safe_cast<System::Int32>(Usb2Struct::Cusb2Err::usb2Success)) {
         Console::WriteLine("Error code 0x{0:x04}: USB2_setTriggerMode failed.", lReturn);
         Console::WriteLine("Exit by pressing the key");
         Console::Out->Flush();
@@ -1165,7 +1141,7 @@ long StartMeasureForContinuousMode(WRRUSB2^ objWrrUSB)
 
     //Set acquired data count
     lReturn = (long)objWrrUSB->USB2_setDataCount(g_nDeviceId, lDataCount);
-    if (lReturn != safe_cast<System::Int32>(Usb2Struct::Cusb2Err::usb2Success)){
+    if (lReturn != safe_cast<System::Int32>(Usb2Struct::Cusb2Err::usb2Success)) {
         Console::WriteLine("Error code 0x{0:x04}: USB2_setDataCount failed.", lReturn);
         Console::WriteLine("Exit by pressing the key");
         Console::Out->Flush();
@@ -1178,7 +1154,7 @@ long StartMeasureForContinuousMode(WRRUSB2^ objWrrUSB)
 
     //Set data transmit count
     lReturn = (long)objWrrUSB->USB2_setDataTransmit(g_nDeviceId, lDataTrasmit);
-    if (lReturn != safe_cast<System::Int32>(Usb2Struct::Cusb2Err::usb2Success)){
+    if (lReturn != safe_cast<System::Int32>(Usb2Struct::Cusb2Err::usb2Success)) {
         Console::WriteLine("Error code 0x{0:x04}: USB2_setDataTransmit failed.", lReturn);
         Console::WriteLine("Exit by pressing the key");
         Console::Out->Flush();
@@ -1191,7 +1167,7 @@ long StartMeasureForContinuousMode(WRRUSB2^ objWrrUSB)
 
     //Set exposure cycle
     lReturn = (long)objWrrUSB->USB2_setExposureCycle(g_nDeviceId, CYCLE_TIME);
-    if (lReturn != safe_cast<System::Int32>(Usb2Struct::Cusb2Err::usb2Success)){
+    if (lReturn != safe_cast<System::Int32>(Usb2Struct::Cusb2Err::usb2Success)) {
         Console::WriteLine("Error code 0x{0:x04}: USB2_setExposureCycle failed.", lReturn);
         Console::WriteLine("Exit by pressing the key");
         Console::Out->Flush();
@@ -1204,7 +1180,7 @@ long StartMeasureForContinuousMode(WRRUSB2^ objWrrUSB)
 
     //Set exposure time
     lReturn = (long)objWrrUSB->USB2_setExposureTime(g_nDeviceId, EXPOSURE_TIME);
-    if (lReturn != safe_cast<System::Int32>(Usb2Struct::Cusb2Err::usb2Success)){
+    if (lReturn != safe_cast<System::Int32>(Usb2Struct::Cusb2Err::usb2Success)) {
         Console::WriteLine("Error code 0x{0:x04}: USB2_setExposureTime failed.", lReturn);
         Console::WriteLine("Exit by pressing the key");
         Console::Out->Flush();
@@ -1217,7 +1193,7 @@ long StartMeasureForContinuousMode(WRRUSB2^ objWrrUSB)
 
     //Set gain value(Set the sensor gain mode, and set low gain or high gain)
     lReturn = (long)objWrrUSB->USB2_setGain(g_nDeviceId, lGainMode, lSensorGainMode);
-    if (lReturn != safe_cast<System::Int32>(Usb2Struct::Cusb2Err::usb2Success)){
+    if (lReturn != safe_cast<System::Int32>(Usb2Struct::Cusb2Err::usb2Success)) {
         Console::WriteLine("Error code 0x{0:x04}: USB2_setGain failed.", lReturn);
         Console::WriteLine("Exit by pressing the key");
         Console::Out->Flush();
@@ -1230,7 +1206,7 @@ long StartMeasureForContinuousMode(WRRUSB2^ objWrrUSB)
 
     //Get image size
     lReturn = (long)objWrrUSB->USB2_getImageSize(g_nDeviceId, lSizeX, lSizeY);
-    if (lReturn != safe_cast<System::Int32>(Usb2Struct::Cusb2Err::usb2Success)){
+    if (lReturn != safe_cast<System::Int32>(Usb2Struct::Cusb2Err::usb2Success)) {
         Console::WriteLine("Error code 0x{0:x04}: USB2_getImageSize failed.", lReturn);
         Console::WriteLine("Exit by pressing the key");
         Console::Out->Flush();
@@ -1248,7 +1224,7 @@ long StartMeasureForContinuousMode(WRRUSB2^ objWrrUSB)
 
     //Buffer allocation
     lReturn = (long)objWrrUSB->USB2_allocateBuffer(g_nDeviceId, lFrameCnt);
-    if (lReturn != safe_cast<System::Int32>(Usb2Struct::Cusb2Err::usb2Success)){
+    if (lReturn != safe_cast<System::Int32>(Usb2Struct::Cusb2Err::usb2Success)) {
         Console::WriteLine("Error code 0x{0:x04}: USB2_allocateBuffer failed.", lReturn);
         Console::WriteLine("Exit by pressing the key");
         Console::Out->Flush();
@@ -1264,7 +1240,7 @@ long StartMeasureForContinuousMode(WRRUSB2^ objWrrUSB)
     Console::Out->Flush();
 
     lReturn = (long)objWrrUSB->USB2_captureStart(g_nDeviceId, lFrameCnt);
-    if (lReturn != safe_cast<System::Int32>(Usb2Struct::Cusb2Err::usb2Success)){
+    if (lReturn != safe_cast<System::Int32>(Usb2Struct::Cusb2Err::usb2Success)) {
         Console::WriteLine("Error code 0x{0:x04}: Data capture can not be start.", lReturn);
         Console::WriteLine("Exit by pressing the key");
         Console::Out->Flush();
@@ -1281,23 +1257,23 @@ long StartMeasureForContinuousMode(WRRUSB2^ objWrrUSB)
 
 
     //Data acquisition is reapeated 5 times while determining status of capture
-    do{
+    do {
         //Acquire capture status
         lReturn = (long)objWrrUSB->USB2_getCaptureStatus(g_nDeviceId, lCaptureFrameCnt, lCurrCaptureIdx);
-       // Trace::WriteLine("APLLOGC++:CaptureStatus lReturn = " + lReturn.ToString() + " lCaptureFrameCnt = " + lCaptureFrameCnt.ToString() + "lCurrCaptureIdx = " + lCurrCaptureIdx.ToString());
-        if (lReturn == safe_cast<System::Int32>(Usb2Struct::Cusb2Err::usb2Success)){
+        // Trace::WriteLine("APLLOGC++:CaptureStatus lReturn = " + lReturn.ToString() + " lCaptureFrameCnt = " + lCaptureFrameCnt.ToString() + "lCurrCaptureIdx = " + lCurrCaptureIdx.ToString());
+        if (lReturn == safe_cast<System::Int32>(Usb2Struct::Cusb2Err::usb2Success)) {
 
             //Calculate old index
-            if (lCaptureFrameCnt > lCurrCaptureIdx + 1){
+            if (lCaptureFrameCnt > lCurrCaptureIdx + 1) {
                 lOldIndex = (long)(OTHERMODE_FRAME_COUNT - (lCaptureFrameCnt - (lCurrCaptureIdx + 1)));
             }
-            else{
+            else {
                 lOldIndex = (long)((lCurrCaptureIdx - lCaptureFrameCnt) + 1);
             }
 
             //Allocate buffer to store header
             aryusImageHeader = gcnew array<unsigned short>((int)(IMAGE_HEADER_SIZE * lCaptureFrameCnt));
-            if (aryusImageHeader == nullptr){
+            if (aryusImageHeader == nullptr) {
                 return safe_cast<System::Int32>(Usb2Struct::Cusb2Err::usb2Err_unsuccess);
             }
             Array::Clear(aryusImageHeader, 0, aryusImageHeader->Length);
@@ -1305,21 +1281,21 @@ long StartMeasureForContinuousMode(WRRUSB2^ objWrrUSB)
             //Allocate a buffer to store data
             lImageDataSize = (long)(lCaptureFrameCnt * lDataTrasmit * lPixelSize);
             aryusImageData = gcnew array<unsigned short>((int)lImageDataSize);
-            if (aryusImageData == nullptr){
+            if (aryusImageData == nullptr) {
                 return safe_cast<System::Int32>(Usb2Struct::Cusb2Err::usb2Err_unsuccess);
             }
             Array::Clear(aryusImageData, 0, aryusImageData->Length);
 
             //Allocate buffer to store time
             aryTime = gcnew array<UInt64>((int)(lDataTrasmit * lCaptureFrameCnt));
-            if (aryTime == nullptr){
+            if (aryTime == nullptr) {
                 return safe_cast<System::Int32>(Usb2Struct::Cusb2Err::usb2Err_unsuccess);
             }
 
             //Get data from device
             lReturn = (long)objWrrUSB->USB2_getImageHeaderData(g_nDeviceId, aryusImageHeader, aryusImageData, lOldIndex, lCaptureFrameCnt, aryTime);
-           // Trace::WriteLine("APLLOGC++:getImageHeaderData lReturn = " + lReturn.ToString());
-            if (lReturn != safe_cast<System::Int32>(Usb2Struct::Cusb2Err::usb2Success)){
+            // Trace::WriteLine("APLLOGC++:getImageHeaderData lReturn = " + lReturn.ToString());
+            if (lReturn != safe_cast<System::Int32>(Usb2Struct::Cusb2Err::usb2Success)) {
                 objWrrUSB->USB2_captureStop(g_nDeviceId);
                 objWrrUSB->USB2_releaseBuffer(g_nDeviceId);
                 Console::WriteLine("Error code 0x{0:x04}: USB2_getImageHeaderData failed.", lReturn);
@@ -1337,15 +1313,15 @@ long StartMeasureForContinuousMode(WRRUSB2^ objWrrUSB)
             gCapturedData = aryusImageData;
 
             //Release allocated buffer
-            if (aryusImageData != nullptr){
+            if (aryusImageData != nullptr) {
                 delete aryusImageData;
                 aryusImageData = nullptr;
             }
-            if (aryusImageHeader != nullptr){
+            if (aryusImageHeader != nullptr) {
                 delete aryusImageHeader;
                 aryusImageHeader = nullptr;
             }
-            if (aryTime != nullptr){
+            if (aryTime != nullptr) {
                 delete aryTime;
                 aryTime = nullptr;
             }
@@ -1360,7 +1336,7 @@ long StartMeasureForContinuousMode(WRRUSB2^ objWrrUSB)
     Console::Out->Flush();
 
     lReturn = (long)objWrrUSB->USB2_captureStop(g_nDeviceId);
-    if (lReturn != safe_cast<System::Int32>(Usb2Struct::Cusb2Err::usb2Success)){
+    if (lReturn != safe_cast<System::Int32>(Usb2Struct::Cusb2Err::usb2Success)) {
         Console::WriteLine("Error code 0x{0:x04}: USB2_captureStop failed.", lReturn);
         Console::WriteLine("Exit by pressing the key");
         Console::Out->Flush();
@@ -1378,7 +1354,7 @@ long StartMeasureForContinuousMode(WRRUSB2^ objWrrUSB)
     Console::Out->Flush();
 
     lReturn = (long)objWrrUSB->USB2_releaseBuffer(g_nDeviceId);
-    if (lReturn != (Int32)(Usb2Struct::Cusb2Err::usb2Success)){
+    if (lReturn != (Int32)(Usb2Struct::Cusb2Err::usb2Success)) {
         Console::Write("Error code 0x{0:x04}: USB2_releaseBuffer failed.", lReturn);
         return lReturn;
     }
@@ -1411,11 +1387,11 @@ long StartMeasureForTriggerMode(WRRUSB2^ objWrrUSB)
     long lSensorGainMode = (long)E_SENSORGAINMODE::D_SENSORGAINMODE_LOWGAIN;
     array<unsigned short>^ aryusImageData = nullptr;
     array<unsigned short>^ aryusImageHeader = nullptr;
-    array<UInt64>^  aryTime = nullptr;
+    array<UInt64>^ aryTime = nullptr;
     gCapturedData = nullptr;  // Clear any previous data.
 
     //Argument error check
-    if (objWrrUSB == nullptr){
+    if (objWrrUSB == nullptr) {
         return safe_cast<System::Int32>(Usb2Struct::Cusb2Err::usb2Err_unsuccess);
     }
 
@@ -1425,7 +1401,7 @@ long StartMeasureForTriggerMode(WRRUSB2^ objWrrUSB)
 
     //Set CaptureMode 
     lReturn = (long)objWrrUSB->USB2_setCaptureMode(g_nDeviceId, (long)E_CAPTUREMODE::D_CAPTUREMODE_TRIGGER);
-    if (lReturn != safe_cast<System::Int32>(Usb2Struct::Cusb2Err::usb2Success)){
+    if (lReturn != safe_cast<System::Int32>(Usb2Struct::Cusb2Err::usb2Success)) {
         Console::WriteLine("Error code 0x{0:x04}: USB2_setCaptureMode failed.", lReturn);
         Console::WriteLine("Exit by pressing the key");
         Console::Out->Flush();
@@ -1438,7 +1414,7 @@ long StartMeasureForTriggerMode(WRRUSB2^ objWrrUSB)
 
     // Set TriggerMode
     lReturn = (long)objWrrUSB->USB2_setTriggerMode(g_nDeviceId, (long)E_TRIGGERMODE::D_TRIGGERMODE_SOFTSYNC);
-    if (lReturn != safe_cast<System::Int32>(Usb2Struct::Cusb2Err::usb2Success)){
+    if (lReturn != safe_cast<System::Int32>(Usb2Struct::Cusb2Err::usb2Success)) {
         Console::WriteLine("Error code 0x{0:x04}: USB2_setTriggerMode failed.", lReturn);
         Console::WriteLine("Exit by pressing the key");
         Console::Out->Flush();
@@ -1451,7 +1427,7 @@ long StartMeasureForTriggerMode(WRRUSB2^ objWrrUSB)
 
     //Set acquired data count
     lReturn = (long)objWrrUSB->USB2_setDataCount(g_nDeviceId, lDataCount);
-    if (lReturn != safe_cast<System::Int32>(Usb2Struct::Cusb2Err::usb2Success)){
+    if (lReturn != safe_cast<System::Int32>(Usb2Struct::Cusb2Err::usb2Success)) {
         Console::WriteLine("Error code 0x{0:x04}: USB2_setDataCount failed.", lReturn);
         Console::WriteLine("Exit by pressing the key");
         Console::Out->Flush();
@@ -1464,7 +1440,7 @@ long StartMeasureForTriggerMode(WRRUSB2^ objWrrUSB)
 
     //Set data transmit count
     lReturn = (long)objWrrUSB->USB2_setDataTransmit(g_nDeviceId, lDataTrasmit);
-    if (lReturn != safe_cast<System::Int32>(Usb2Struct::Cusb2Err::usb2Success)){
+    if (lReturn != safe_cast<System::Int32>(Usb2Struct::Cusb2Err::usb2Success)) {
         Console::WriteLine("Error code 0x{0:x04}: USB2_setDataTransmit failed.", lReturn);
         Console::WriteLine("Exit by pressing the key");
         Console::Out->Flush();
@@ -1477,7 +1453,7 @@ long StartMeasureForTriggerMode(WRRUSB2^ objWrrUSB)
 
     //Set exposure cycle
     lReturn = (long)objWrrUSB->USB2_setExposureCycle(g_nDeviceId, CYCLE_TIME);
-    if (lReturn != safe_cast<System::Int32>(Usb2Struct::Cusb2Err::usb2Success)){
+    if (lReturn != safe_cast<System::Int32>(Usb2Struct::Cusb2Err::usb2Success)) {
         Console::WriteLine("Error code 0x{0:x04}: USB2_setExposureCycle failed.", lReturn);
         Console::WriteLine("Exit by pressing the key");
         Console::Out->Flush();
@@ -1490,7 +1466,7 @@ long StartMeasureForTriggerMode(WRRUSB2^ objWrrUSB)
 
     //Set exposure time
     lReturn = (long)objWrrUSB->USB2_setExposureTime(g_nDeviceId, EXPOSURE_TIME);
-    if (lReturn != safe_cast<System::Int32>(Usb2Struct::Cusb2Err::usb2Success)){
+    if (lReturn != safe_cast<System::Int32>(Usb2Struct::Cusb2Err::usb2Success)) {
         Console::WriteLine("Error code 0x{0:x04}: USB2_setExposureTime failed.", lReturn);
         Console::WriteLine("Exit by pressing the key");
         Console::Out->Flush();
@@ -1503,7 +1479,7 @@ long StartMeasureForTriggerMode(WRRUSB2^ objWrrUSB)
 
     //Set gain value(Set the sensor gain mode, and set low gain or high gain)
     lReturn = (long)objWrrUSB->USB2_setGain(g_nDeviceId, lGainMode, lSensorGainMode);
-    if (lReturn != safe_cast<System::Int32>(Usb2Struct::Cusb2Err::usb2Success)){
+    if (lReturn != safe_cast<System::Int32>(Usb2Struct::Cusb2Err::usb2Success)) {
         Console::WriteLine("Error code 0x{0:x04}: USB2_setGain failed.", lReturn);
         Console::WriteLine("Exit by pressing the key");
         Console::Out->Flush();
@@ -1516,7 +1492,7 @@ long StartMeasureForTriggerMode(WRRUSB2^ objWrrUSB)
 
     //Get image size
     lReturn = (long)objWrrUSB->USB2_getImageSize(g_nDeviceId, lSizeX, lSizeY);
-    if (lReturn != safe_cast<System::Int32>(Usb2Struct::Cusb2Err::usb2Success)){
+    if (lReturn != safe_cast<System::Int32>(Usb2Struct::Cusb2Err::usb2Success)) {
         Console::WriteLine("Error code 0x{0:x04}: USB2_getImageSize failed.", lReturn);
         Console::WriteLine("Exit by pressing the key");
         Console::Out->Flush();
@@ -1534,7 +1510,7 @@ long StartMeasureForTriggerMode(WRRUSB2^ objWrrUSB)
 
     //Buffer allocation
     lReturn = (long)objWrrUSB->USB2_allocateBuffer(g_nDeviceId, lFrameCnt);
-    if (lReturn != safe_cast<System::Int32>(Usb2Struct::Cusb2Err::usb2Success)){
+    if (lReturn != safe_cast<System::Int32>(Usb2Struct::Cusb2Err::usb2Success)) {
         Console::WriteLine("Error code 0x{0:x04}: USB2_allocateBuffer failed.", lReturn);
         Console::WriteLine("Exit by pressing the key");
         Console::Out->Flush();
@@ -1548,7 +1524,7 @@ long StartMeasureForTriggerMode(WRRUSB2^ objWrrUSB)
     //Capture start
     Console::WriteLine("Start Capture.............");
     lReturn = (long)objWrrUSB->USB2_captureStart(g_nDeviceId, lFrameCnt);
-    if (lReturn != safe_cast<System::Int32>(Usb2Struct::Cusb2Err::usb2Success)){
+    if (lReturn != safe_cast<System::Int32>(Usb2Struct::Cusb2Err::usb2Success)) {
         Console::WriteLine("Error code 0x{0:x04}: Data capture can not be start.", lReturn);
         Console::WriteLine("Exit by pressing the key");
         Console::Out->Flush();
@@ -1564,7 +1540,7 @@ long StartMeasureForTriggerMode(WRRUSB2^ objWrrUSB)
     Console::Out->Flush();
 
     lReturn = (long)objWrrUSB->USB2_fireTrigger(g_nDeviceId);
-    if (lReturn != safe_cast<System::Int32>(Usb2Struct::Cusb2Err::usb2Success)){
+    if (lReturn != safe_cast<System::Int32>(Usb2Struct::Cusb2Err::usb2Success)) {
         Console::WriteLine("Error code 0x{0:x04}: USB2_fireTrigger failed.", lReturn);
         Console::WriteLine("Exit by pressing the key");
         Console::Out->Flush();
@@ -1581,23 +1557,23 @@ long StartMeasureForTriggerMode(WRRUSB2^ objWrrUSB)
 
 
     //Data acquisition is reapeated 5 times while determining status of capture
-    do{
+    do {
         //Acquire capture status
         lReturn = (long)objWrrUSB->USB2_getCaptureStatus(g_nDeviceId, lCaptureFrameCnt, lCurrCaptureIdx);
         //Trace::WriteLine("APLLOGC++:CaptureStatus lReturn = " + lReturn.ToString() + " lCaptureFrameCnt = " + lCaptureFrameCnt.ToString() + "lCurrCaptureIdx = " + lCurrCaptureIdx.ToString());
-        if (lReturn == safe_cast<System::Int32>(Usb2Struct::Cusb2Err::usb2Success)){
+        if (lReturn == safe_cast<System::Int32>(Usb2Struct::Cusb2Err::usb2Success)) {
 
             //Calculate old index
-            if (lCaptureFrameCnt > lCurrCaptureIdx + 1){
+            if (lCaptureFrameCnt > lCurrCaptureIdx + 1) {
                 lOldIndex = (long)(OTHERMODE_FRAME_COUNT - (lCaptureFrameCnt - (lCurrCaptureIdx + 1)));
             }
-            else{
+            else {
                 lOldIndex = (long)((lCurrCaptureIdx - lCaptureFrameCnt) + 1);
             }
 
             //Allocate buffer to store header
             aryusImageHeader = gcnew array<unsigned short>((int)(IMAGE_HEADER_SIZE * lCaptureFrameCnt));
-            if (aryusImageHeader == nullptr){
+            if (aryusImageHeader == nullptr) {
                 return safe_cast<System::Int32>(Usb2Struct::Cusb2Err::usb2Err_unsuccess);
             }
             Array::Clear(aryusImageHeader, 0, aryusImageHeader->Length);
@@ -1605,21 +1581,21 @@ long StartMeasureForTriggerMode(WRRUSB2^ objWrrUSB)
             //Allocate a buffer to store data
             lImageDataSize = (long)(lCaptureFrameCnt * lDataTrasmit * lPixelSize);
             aryusImageData = gcnew array<unsigned short>((int)lImageDataSize);
-            if (aryusImageData == nullptr){
+            if (aryusImageData == nullptr) {
                 return safe_cast<System::Int32>(Usb2Struct::Cusb2Err::usb2Err_unsuccess);
             }
             Array::Clear(aryusImageData, 0, aryusImageData->Length);
 
             //Allocate buffer to store time
             aryTime = gcnew array<UInt64>((int)(lDataTrasmit * lCaptureFrameCnt));
-            if (aryTime == nullptr){
+            if (aryTime == nullptr) {
                 return safe_cast<System::Int32>(Usb2Struct::Cusb2Err::usb2Err_unsuccess);
             }
 
             //Get data from device
             lReturn = (long)objWrrUSB->USB2_getImageHeaderData(g_nDeviceId, aryusImageHeader, aryusImageData, lOldIndex, lCaptureFrameCnt, aryTime);
             //Trace::WriteLine("APLLOGC++:getImageHeaderData lReturn = " + lReturn.ToString());
-            if (lReturn != safe_cast<System::Int32>(Usb2Struct::Cusb2Err::usb2Success)){
+            if (lReturn != safe_cast<System::Int32>(Usb2Struct::Cusb2Err::usb2Success)) {
                 objWrrUSB->USB2_captureStop(g_nDeviceId);
                 objWrrUSB->USB2_releaseBuffer(g_nDeviceId);
                 Console::WriteLine("Error code 0x{0:x04}: USB2_getImageHeaderData failed.", lReturn);
@@ -1637,28 +1613,28 @@ long StartMeasureForTriggerMode(WRRUSB2^ objWrrUSB)
             gCapturedData = aryusImageData;
 
             //Release allocated buffer
-            if (aryusImageData != nullptr){
+            if (aryusImageData != nullptr) {
                 delete aryusImageData;
                 aryusImageData = nullptr;
             }
-            if (aryusImageHeader != nullptr){
+            if (aryusImageHeader != nullptr) {
                 delete aryusImageHeader;
                 aryusImageHeader = nullptr;
             }
-            if (aryTime != nullptr){
+            if (aryTime != nullptr) {
                 delete aryTime;
                 aryTime = nullptr;
             }
 
             nRepeatCount++;
 
-            if (nRepeatCount < REPEAT_COUNT){
+            if (nRepeatCount < REPEAT_COUNT) {
                 // Fire trigger
                 Console::WriteLine("Fire Trigger.........");
                 Console::Out->Flush();
 
                 lReturn = (long)objWrrUSB->USB2_fireTrigger(g_nDeviceId);
-                if (lReturn != safe_cast<System::Int32>(Usb2Struct::Cusb2Err::usb2Success)){
+                if (lReturn != safe_cast<System::Int32>(Usb2Struct::Cusb2Err::usb2Success)) {
                     Console::WriteLine("Error code 0x{0:x04}: USB2_fireTrigger failed.", lReturn);
                     Console::WriteLine("Exit by pressing the key");
                     Console::Out->Flush();
@@ -1678,7 +1654,7 @@ long StartMeasureForTriggerMode(WRRUSB2^ objWrrUSB)
     Console::Out->Flush();
 
     lReturn = (long)objWrrUSB->USB2_captureStop(g_nDeviceId);
-    if (lReturn != safe_cast<System::Int32>(Usb2Struct::Cusb2Err::usb2Success)){
+    if (lReturn != safe_cast<System::Int32>(Usb2Struct::Cusb2Err::usb2Success)) {
         Console::WriteLine("Error code 0x{0:x04}: USB2_captureStop failed.", lReturn);
         Console::WriteLine("Exit by pressing the key");
         Console::Out->Flush();
@@ -1696,7 +1672,7 @@ long StartMeasureForTriggerMode(WRRUSB2^ objWrrUSB)
     Console::Out->Flush();
 
     lReturn = (long)objWrrUSB->USB2_releaseBuffer(g_nDeviceId);
-    if (lReturn != (Int32)(Usb2Struct::Cusb2Err::usb2Success)){
+    if (lReturn != (Int32)(Usb2Struct::Cusb2Err::usb2Success)) {
         Console::Write("Error code 0x{0:x04}: USB2_releaseBuffer failed.", lReturn);
         return lReturn;
     }
@@ -1965,7 +1941,7 @@ bool DisplayData(array<unsigned short>^ aryusImageData)
     String^ strData = nullptr;
     int     nData = 0;
     //Output data to the console
-    for (int nIdx = 0; nIdx < aryusImageData->Length; nIdx++){
+    for (int nIdx = 0; nIdx < aryusImageData->Length; nIdx++) {
         nData = aryusImageData[nIdx];
         strData = String::Format("{0:X04} ", nData);
         Console::Write(strData);
