@@ -10,12 +10,17 @@ FileName: SampleAPL.cpp
 //-----------------------------------------------------------------------------
 // include
 //-----------------------------------------------------------------------------
+
+
+
+
 #include "stdafx.h"
 #include <vcclr.h>
 #include "GlobalData.h"      
 #include "DataCapture.h"     
 #include "DataSaver.h"
 #include <mutex>
+
 
 //-----------------------------------------------------------------------------
 // define
@@ -30,6 +35,8 @@ FileName: SampleAPL.cpp
 #define  CYCLE_TIME                         210000  //Cycle time(usec)
 #define  REPEAT_COUNT                       5       //Repeat count
 
+
+
 //-----------------------------------------------------------------------------
 // namespace
 //-----------------------------------------------------------------------------
@@ -41,6 +48,8 @@ using namespace System::Runtime::InteropServices;
 using namespace System::Diagnostics;
 using namespace WRRUSB2_DLL;
 using namespace System::Collections::Concurrent;
+
+
 
 
 //-----------------------------------------------------------------------------
@@ -87,6 +96,7 @@ enum class E_SENSORGAINMODE {
     D_SENSORGAINMODE_NOTHING = 0x000000FF,              //Nothing
 };
 
+
 //-----------------------------------------------------------------------------
 // function
 //-----------------------------------------------------------------------------
@@ -112,11 +122,67 @@ void SetupCapture(DataCapture^ capture);
 void OnProcessExit(Object^ sender, EventArgs^ e);
 
 
+
+String^ CheckCommandFile() {
+    String^ commandFilePath = "command.txt";
+    String^ completedFilePath = "command_completed.txt";
+
+    try {
+        // Debug the current directory
+        //Console::WriteLine("[Debug] Checking for command file at: " +
+        //    System::IO::Path::GetFullPath(commandFilePath));
+        //Console::Out->Flush();
+
+        if (System::IO::File::Exists(commandFilePath)) {
+            Console::WriteLine("[Debug] Command file found!");
+            Console::Out->Flush();
+
+            // Read the command
+            String^ command = System::IO::File::ReadAllText(commandFilePath);
+            Console::WriteLine("[Debug] Read command: " + command);
+            Console::Out->Flush();
+
+            // Delete command file
+            System::IO::File::Delete(commandFilePath);
+            Console::WriteLine("[Debug] Deleted command file");
+            Console::Out->Flush();
+
+            // Write to completion file
+            System::IO::File::WriteAllText(completedFilePath, "done");
+            Console::WriteLine("[Debug] Wrote completion file");
+            Console::Out->Flush();
+
+            return command;
+        }
+    }
+    catch (System::Exception^ ex) {
+        Console::WriteLine("[Error] File operation failed: " + ex->Message);
+        Console::WriteLine("[Error] Stack trace: " + ex->StackTrace);
+        Console::Out->Flush();
+    }
+
+    return nullptr;
+}
+
 //-----------------------------------------------------------------------------
 // main function
 //-----------------------------------------------------------------------------
 int main(array<System::String^>^ args)
 {
+    try {
+        // Test file writing capability
+        System::IO::File::WriteAllText("test_write.txt", "Test write access");
+        Console::WriteLine("[Debug] Successfully wrote test file");
+        System::IO::File::Delete("test_write.txt");
+        Console::WriteLine("[Debug] Successfully deleted test file");
+        Console::Out->Flush();
+    }
+    catch (System::Exception^ ex) {
+        Console::WriteLine("[Error] File permission test failed: " + ex->Message);
+        Console::Out->Flush();
+    }
+
+
     Console::WriteLine("[main] in main");
     Console::Out->Flush();
     long lReturn = 0;
@@ -160,30 +226,27 @@ int main(array<System::String^>^ args)
     PrintMenu();
     Console::Out->Flush();
 
-    while (nLoopFlag == 1)
-    {
-        Console::WriteLine("intheloop");
-        Console::Out->Flush();
-        Console::Write(">");
-        Console::Out->Flush();
-
-        Console::WriteLine("before");
-        Console::Out->Flush();
-
-        String^ strInput = Console::In->ReadLine(); // <- works from Qt or terminal
-        Console::WriteLine("afterreadline");
-        Console::Out->Flush();
+    while (nLoopFlag == 1) {
 
 
+        // Check for commands from file
+        String^ strInput = CheckCommandFile();
+
+        // If no command, wait briefly and continue
         if (strInput == nullptr) {
-            Console::WriteLine("[input stream closed]");
-            break;
+            System::Threading::Thread::Sleep(100);
+            continue;
         }
 
+        Console::WriteLine("[Debug] Received input: '" + strInput + "'");
+        Console::Out->Flush();
+
+        // Process input as before
         strInput = strInput->Trim();
         if (String::IsNullOrWhiteSpace(strInput)) continue;
 
         char cInput = Char::ToUpper(strInput[0]);
+
 
 
         switch (cInput)
@@ -379,9 +442,6 @@ long UninitializeDevice(WRRUSB2^ objWrrUSB)
         Console::WriteLine("Exit by pressing the key");
         Console::Out->Flush();
 
-        if (Environment::UserInteractive) {
-            Console::ReadKey();
-        }
         return lReturn;
     }
 
@@ -391,10 +451,6 @@ long UninitializeDevice(WRRUSB2^ objWrrUSB)
         Console::WriteLine("Error code 0x{0:x04}: USB2_uninitialize failed.", lReturn);
         Console::WriteLine("Exit by pressing the key");
         Console::Out->Flush();
-
-        if (Environment::UserInteractive) {
-            Console::ReadKey();
-        }
     }
 
     return lReturn;
