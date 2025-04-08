@@ -150,7 +150,7 @@ String^ CheckCommandFile() {
             // Write to completion file
             System::IO::File::WriteAllText(completedFilePath, "done");
         //    Console::WriteLine("[Debug] Wrote completion file");
-         //   Console::Out->Flush();
+        //    Console::Out->Flush();
 
             return command;
         }
@@ -172,19 +172,19 @@ int main(array<System::String^>^ args)
     try {
         // Test file writing capability
         System::IO::File::WriteAllText("test_write.txt", "Test write access");
-        //Console::WriteLine("[Debug] Successfully wrote test file");
+        Console::WriteLine("[Debug] Successfully wrote test file");
         System::IO::File::Delete("test_write.txt");
-        //Console::WriteLine("[Debug] Successfully deleted test file");
+        Console::WriteLine("[Debug] Successfully deleted test file");
         Console::Out->Flush();
     }
     catch (System::Exception^ ex) {
-        //Console::WriteLine("[Error] File permission test failed: " + ex->Message);
-        //Console::Out->Flush();
+        Console::WriteLine("[Error] File permission test failed: " + ex->Message);
+        Console::Out->Flush();
     }
 
 
-    //Console::WriteLine("[main] in main");
-    //Console::Out->Flush();
+    Console::WriteLine("[main] in main");
+    Console::Out->Flush();
     long lReturn = 0;
     int nLoopFlag = 1;
     char cInput = ' ';
@@ -238,8 +238,8 @@ int main(array<System::String^>^ args)
             continue;
         }
 
-        //Console::WriteLine("[Debug] Received input: '" + strInput + "'");
-        //Console::Out->Flush();
+        Console::WriteLine("[Debug] Received input: '" + strInput + "'");
+        Console::Out->Flush();
 
         // Process input as before
         strInput = strInput->Trim();
@@ -647,6 +647,7 @@ long SetLDPower(WRRUSB2^ objWrrUSB)
     return lReturn;
 }
 
+
 /// <summary>
 /// Get LD Power enable
 /// </summary>
@@ -746,6 +747,7 @@ long SetLDPowerEnable(WRRUSB2^ objWrrUSB)
     Console::Out->Flush();
     return lReturn;
 }
+
 
 /// <summary>
 /// Get LD temperature
