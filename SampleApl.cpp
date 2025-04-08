@@ -134,23 +134,23 @@ String^ CheckCommandFile() {
         //Console::Out->Flush();
 
         if (System::IO::File::Exists(commandFilePath)) {
-            Console::WriteLine("[Debug] Command file found!");
-            Console::Out->Flush();
+         //   Console::WriteLine("[Debug] Command file found!");
+         //   Console::Out->Flush();
 
             // Read the command
             String^ command = System::IO::File::ReadAllText(commandFilePath);
-            Console::WriteLine("[Debug] Read command: " + command);
-            Console::Out->Flush();
+        //    Console::WriteLine("[Debug] Read command: " + command);
+        //    Console::Out->Flush();
 
             // Delete command file
             System::IO::File::Delete(commandFilePath);
-            Console::WriteLine("[Debug] Deleted command file");
-            Console::Out->Flush();
+        //    Console::WriteLine("[Debug] Deleted command file");
+        //    Console::Out->Flush();
 
             // Write to completion file
             System::IO::File::WriteAllText(completedFilePath, "done");
-            Console::WriteLine("[Debug] Wrote completion file");
-            Console::Out->Flush();
+        //    Console::WriteLine("[Debug] Wrote completion file");
+         //   Console::Out->Flush();
 
             return command;
         }
@@ -172,19 +172,19 @@ int main(array<System::String^>^ args)
     try {
         // Test file writing capability
         System::IO::File::WriteAllText("test_write.txt", "Test write access");
-        Console::WriteLine("[Debug] Successfully wrote test file");
+        //Console::WriteLine("[Debug] Successfully wrote test file");
         System::IO::File::Delete("test_write.txt");
-        Console::WriteLine("[Debug] Successfully deleted test file");
+        //Console::WriteLine("[Debug] Successfully deleted test file");
         Console::Out->Flush();
     }
     catch (System::Exception^ ex) {
-        Console::WriteLine("[Error] File permission test failed: " + ex->Message);
-        Console::Out->Flush();
+        //Console::WriteLine("[Error] File permission test failed: " + ex->Message);
+        //Console::Out->Flush();
     }
 
 
-    Console::WriteLine("[main] in main");
-    Console::Out->Flush();
+    //Console::WriteLine("[main] in main");
+    //Console::Out->Flush();
     long lReturn = 0;
     int nLoopFlag = 1;
     char cInput = ' ';
@@ -238,8 +238,8 @@ int main(array<System::String^>^ args)
             continue;
         }
 
-        Console::WriteLine("[Debug] Received input: '" + strInput + "'");
-        Console::Out->Flush();
+        //Console::WriteLine("[Debug] Received input: '" + strInput + "'");
+        //Console::Out->Flush();
 
         // Process input as before
         strInput = strInput->Trim();
@@ -599,7 +599,6 @@ long SetLDPower(WRRUSB2^ objWrrUSB)
 {
     long lReturn = 0;
     Int64 lLDPower = 0;
-    String^ strNum = "";
 
     //Argument error check
     if (objWrrUSB == nullptr) {
@@ -611,26 +610,40 @@ long SetLDPower(WRRUSB2^ objWrrUSB)
     Console::WriteLine("MIDDLE : 2");
     Console::WriteLine("HIGH   : 3");
     Console::Out->Flush();
-
     Console::Write("Set LD Power > ");
-    strNum = Console::ReadLine();
-    Int64::TryParse(strNum, lLDPower);
+    Console::Out->Flush();
+
+    // Wait for a command file with the parameter value
+    bool gotInput = false;
+    while (!gotInput) {
+        String^ value = CheckCommandFile();
+        if (value != nullptr) {
+            Console::WriteLine(value); // Echo the input value
+            Console::Out->Flush();
+            if (Int64::TryParse(value, lLDPower)) {
+                gotInput = true;
+            }
+            else {
+                Console::WriteLine("Invalid input. Please try again.");
+                Console::Out->Flush();
+            }
+        }
+        System::Threading::Thread::Sleep(100); // Don't hog the CPU
+    }
 
     lReturn = (long)objWrrUSB->USB2_setLDPower(g_nDeviceId, lLDPower);
     if (lReturn != safe_cast<System::Int32>(Usb2Struct::Cusb2Err::usb2Success)) {
         Console::WriteLine("Error code 0x{0:x04}: USB2_setLDPower failed.", lReturn);
         Console::WriteLine("Exit by pressing the key");
         Console::Out->Flush();
-
         if (Environment::UserInteractive) {
             Console::ReadKey();
         }
         return lReturn;
     }
+
     Console::WriteLine("");
     Console::Out->Flush();
-
-
     return lReturn;
 }
 
@@ -679,7 +692,6 @@ long SetLDPowerEnable(WRRUSB2^ objWrrUSB)
 {
     long lReturn = 0;
     Int64 lLDPowerEnable = 0;
-
     //Argument error check
     if (objWrrUSB == nullptr)
     {
@@ -692,10 +704,26 @@ long SetLDPowerEnable(WRRUSB2^ objWrrUSB)
         Console::WriteLine("Enable  : 1");
         Console::WriteLine("Disable : Other than 1");
         Console::Out->Flush();
-
         Console::Write("Set LD Power Enable > ");
+        Console::Out->Flush();
 
-        Int64::TryParse(Console::ReadLine(), lLDPowerEnable);
+        // Wait for a command file with the parameter value
+        bool gotInput = false;
+        while (!gotInput) {
+            String^ value = CheckCommandFile();
+            if (value != nullptr) {
+                Console::WriteLine(value); // Echo the input value
+                Console::Out->Flush();
+                if (Int64::TryParse(value, lLDPowerEnable)) {
+                    gotInput = true;
+                }
+                else {
+                    Console::WriteLine("Invalid input. Please try again.");
+                    Console::Out->Flush();
+                }
+            }
+            System::Threading::Thread::Sleep(100); // Don't hog the CPU
+        }
     }
     catch (Exception^)
     {
@@ -709,7 +737,6 @@ long SetLDPowerEnable(WRRUSB2^ objWrrUSB)
         Console::WriteLine("Error code 0x{0:x04}: USB2_setLDPowerEnable failed.", lReturn);
         Console::WriteLine("Exit by pressing the key");
         Console::Out->Flush();
-
         if (Environment::UserInteractive) {
             Console::ReadKey();
         }
@@ -717,8 +744,6 @@ long SetLDPowerEnable(WRRUSB2^ objWrrUSB)
     }
     Console::WriteLine("");
     Console::Out->Flush();
-
-
     return lReturn;
 }
 
